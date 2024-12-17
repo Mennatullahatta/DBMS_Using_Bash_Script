@@ -1,0 +1,120 @@
+#!/bin/bash
+
+WHITE='\033[1;37m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+REST='\033[0m' 
+
+input=""
+
+while true; do
+    if [[ $(ls -p | grep -v / | grep -v '_meta' | wc -l) -eq 0 ]]; then
+        echo -e "${RED}There are no tables created${REST}"
+        break
+    else
+        echo -e "${WHITE}Existing tables:${REST}"
+        tables=($(ls -p | grep -v / | grep -v '_meta'))
+
+        for i in "${!tables[@]}"; do
+            echo -e "${WHITE}$((i+1)). ${YELLOW}${tables[i]}${REST}"
+        done
+
+        read -p "◆ Enter the name of the table you want to insert in or '0' to return to database menu: " option
+        
+        if [[ $option == '0' ]]; then
+            
+            . ../../connect_menu
+            break
+        fi
+        
+
+
+        if [[ " ${tables[@]} " =~ " $option " ]]; then
+            tb_name="$option"
+
+            if [[ -f $tb_name ]]; then
+                IFS=":"
+                col=$(head -1 "$tb_name"_meta)   
+                types=$(tail -1 "$tb_name"_meta)   
+                read -ra col_array <<< "$col"
+                read -ra types_array <<< "$types"
+
+                primary_key_col=-1
+
+
+                for ((i=0; i<${#col_array[*]}; i++)); do
+                    if [[ "${col_array[i]}" == *"(PK)"* ]]; then
+                        primary_key_col=$i
+                        break
+                    fi
+                done
+
+                input=""
+                for ((i=0; i<${#col_array[*]}; i++)); do
+                    echo -n -e "◆ Enter value for ${YELLOW}${col_array[i]}${RESET} column: " 
+                    read -r value
+                    
+                    if [[ $i -eq $primary_key_col ]]; then
+
+                        while true; do
+                            if [[ ${types_array[i]} == "Int" ]]; then
+                                if [[ $value =~ ^[0-9]+$ ]]; then
+
+                                    if [[ $(awk -F: -v pkcol=$((primary_key_col+1)) '{print $pkcol}' "$tb_name" | grep -Fx -c "$value") -gt 0 ]]; then
+                                        echo -e "${RED}Error: Duplicated Primary Key. Please enter a unique value${RESET}"
+                                       echo -n -e "◆ Enter value for ${LIGHT_GRAY}${col_array[i]}${RESET} column: " 
+                                       read -r value
+                                    else
+                                        input+="$value:"
+                                        break
+                                    fi
+                                else
+                                    echo -e "${RED}Invalid input. Please enter a valid integer for Primary Key.${RESET}"
+                                    echo -n -e "◆ Enter value for ${LIGHT_GRAY}${col_array[i]}${RESET} column: " 
+                                    read -r value
+                                fi
+                            elif [[ ${types_array[i]} == "String" ]]; then
+                                if [[ -z $value ]]; then
+                                    echo -e "${RED}Error: Primary key cannot be empty.${REST}"
+                                    read -p "◆ Enter value for ${YELLOW}${col_array[i]}${RESET} column: " value
+                                elif [[ $(awk -F: -v pkcol=$((primary_key_col+1)) '{print $pkcol}' "$tb_name" | grep -Fx -c "$value") -gt 0 ]]; then
+                                    echo -e "${RED}Error: Duplicated Primary Key. Please enter a unique value${REST}"
+                                    echo -n -e "◆ Enter value for ${LIGHT_GRAY}${col_array[i]}${RESET} column: " 
+                                    read -r value
+                                else
+                                    input+="$value:"
+                                    break
+                                fi
+                            fi
+                        done
+                    else
+
+                        if [[ ${types_array[i]} == "Int" && ! -z $value && ! $value =~ ^[0-9]+$ ]]; then
+                            echo -e "${RED}Invalid input. Please enter a valid integer for ${col_array[i]} column.${REST}"
+                            ((i--))
+                        elif [[ ${types_array[i]} == "String" && -z $value ]]; then
+                           echo -e "${RED}Invalid input. Please enter a valid string for column ${col_array[i]}.${REST}"
+
+                            
+                            ((i--))
+                        else
+                            input+="$value:"
+                        fi
+                    fi
+                done
+
+                IFS=$' \t\n'
+                echo "${input::-1}" >> "$tb_name"   
+                echo -e "${GREEN}Data Inserted Successfully: ${input::-1}${REST}"
+                break
+            else
+                echo -e "${RED}Invalid table. Please try again.${REST}"
+            fi
+        else
+            echo -e "${RED}Invalid table name. Please try again.${REST}"
+        fi
+    fi
+done
+sleep 0.5
+. ../../connect_menu

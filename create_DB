@@ -1,0 +1,38 @@
+#!/bin/bash
+
+RED='\033[0;31m'           
+GREEN='\033[0;32m'         
+DARK_BLUE='\033[0;34m'     
+WHITE='\033[1;37m'         
+RESET='\033[0m'           
+
+export LC_COLLATE=C
+shopt -s extglob
+
+while true
+do
+    read -p "◆ Enter database name or '0' to return to main menu: " DB_name
+    
+    if [[ $DB_name == 0 ]]; then
+        cd ..
+        . ./main_menu
+    else
+        DB_name=$(echo $DB_name | sed 's/ /_/g')
+
+        case $DB_name in
+            +([a-zA-Z_]*))
+                if [[ -d $DB_name ]]; then
+                    echo -e "${RED}  Database already exists.${RESET}"
+                    continue
+                else
+                    mkdir $DB_name
+                    echo -e "${GREEN}  $DB_name Created successfully.${RESET}"
+                    continue
+                fi
+            ;;
+            *)
+                echo -e "${RED}  Invalid database name.${RESET}"
+            ;;
+        esac
+    fi
+done

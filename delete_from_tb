@@ -1,0 +1,46 @@
+#!/bin/bash
+
+WHITE='\033[1;37m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+RESET='\033[0m'
+
+while true; do
+
+    tables=($(ls -p | grep -v / | grep -v '_meta'))
+
+    if [[ ${#tables[@]} -eq 0 ]]; then
+        echo -e "${RED}There are no tables created.${RESET}"
+        break
+    else
+        echo -e "${WHITE}Existing tables:${RESET}"
+
+ 
+        for i in "${!tables[@]}"; do
+            echo -e "$((i + 1)). ${YELLOW}${tables[i]}${RESET}"
+        done
+
+ 
+        read -p "◆ Enter the table name to delete data from or '0' to return to database menu: " tb_name
+
+ 
+        if [[ $tb_name == "0" ]]; then
+            . ../../connect_menu
+            break
+        elif [[ " ${tables[@]} " =~ " ${tb_name} " ]]; then
+ 
+            read -p "$(echo -e "◆ Enter the primary key value to delete the row from ${YELLOW}$tb_name${RESET}: ")" pk
+
+ 
+            if grep -q "^$pk:" "$tb_name"; then
+                sed -i "/^$pk:/d" "$tb_name"
+                echo -e "${GREEN}Data with primary key $pk deleted successfully from $tb_name${RESET}."
+            else
+                echo -e "${RED}No data found with primary key $pk in $tb_name${RESET}."
+            fi
+        else
+            echo -e "${RED}Invalid table name. Please enter a valid table name.${RESET}"
+        fi
+    fi
+done

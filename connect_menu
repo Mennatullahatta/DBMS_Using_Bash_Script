@@ -1,0 +1,53 @@
+#!/bin/bash
+
+
+BLUE='\033[1;34m'  
+RESET='\033[0m'    
+BLUE='\033[1;34m'  
+RESET='\033[0m'     
+echo -e "${BLUE}╔═══════════════════════════════════════╗${RESET}"
+echo -e "${BLUE}          $dbname Database Menu            ${RESET}"
+echo -e "${BLUE}╠═══════════════════════════════════════╣${RESET}"
+echo -e "${BLUE}║${RESET} 1. Create Table                       ${BLUE}║${RESET}"
+echo -e "${BLUE}║${RESET} 2. List Tables                        ${BLUE}║${RESET}"
+echo -e "${BLUE}║${RESET} 3. Drop Table                         ${BLUE}║${RESET}"
+echo -e "${BLUE}║${RESET} 4. Insert Into Table                  ${BLUE}║${RESET}"
+echo -e "${BLUE}║${RESET} 5. Select From Table                  ${BLUE}║${RESET}"
+echo -e "${BLUE}║${RESET} 6. Delete From Table                  ${BLUE}║${RESET}"
+echo -e "${BLUE}║${RESET} 7. Update Table                       ${BLUE}║${RESET}"
+echo -e "${BLUE}║${RESET} 8. Exit                               ${BLUE}║${RESET}"
+echo -e "${BLUE}╚═══════════════════════════════════════╝${RESET}"
+
+while true; do
+    read -p "◆ Choose an option (1-8): " REPLY
+    case $REPLY in
+        1)
+            . ../../create_tb
+            ;;
+        2)
+            . ../../list_tbs
+            ;;
+        3)
+            . ../../drop_tb
+            ;;
+        4)
+            . ../../insert_into_tb
+            ;;
+        5)
+            . ../../select_from_tb
+            ;;
+        6)
+            . ../../delete_from_tb
+            ;;
+        7)
+            . ../../update_tb
+            ;;
+        8)
+            cd ../../
+	    . ./main_menu
+            ;;
+        *)
+            echo "Invalid option. Please select a valid number."
+            ;;
+    esac
+done

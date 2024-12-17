@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [[ $(ls | grep -v '/$' | grep -v '_meta' | wc -l) -eq 0 ]]; then
+    echo "There are no tables created"
+else
+
+    echo "Tables found:"
+    tables=$(ls | grep -v '/$' | grep -v '_meta')
+    i=1
+    for table in $tables; do
+        echo -e "${i}. ${YELLOW}$table${RESET}"
+        ((i++))
+    done
+fi
+sleep 0.5
+. ../../connect_menu

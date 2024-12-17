@@ -1,0 +1,117 @@
+#!/bin/bash
+
+yellow="\033[33m"
+white='\033[1;37m'
+red="\033[31m"
+green="\033[32m"
+reset="\033[0m"
+
+echo -e "${white}Existing tables:${reset}"
+tables=($(ls -I '*meta'))
+
+if [[ ${#tables[@]} -eq 0 ]]; then
+    echo -e "${red}No tables found.${reset}"
+    exit 1
+fi
+
+for i in "${!tables[@]}"; do
+    echo -e "${white}$((i + 1)). ${yellow}${tables[i]}${reset}"
+done
+
+while true; do
+    read -p "◆ Enter the name of the table you want to update in or '0' to return to database menu: " table_name
+    if [[ $table_name == 0 ]]; then
+	. ../../connect_menu
+    else
+	meta_file="${table_name}_meta"
+	if [[ ! -f "$table_name" || ! -f "$meta_file" ]]; then
+	    echo -e "${red}Table not found. Please try again.${reset}"
+	else
+	    break
+	fi
+    fi
+done
+
+columns=($(head -n 1 "$meta_file" | tr ':' '\n'))
+data_types=($(sed -n '2p' "$meta_file" | tr ':' '\n'))
+
+echo -e "${white}${yellow}${table_name} ${white}columns:${reset}"
+for i in "${!columns[@]}"; do
+    echo -e "${white}$((i + 1)). ${yellow}${columns[i]}${reset}"
+done
+
+while true; do
+    read -p "◆ Enter the column number to update: " col_number
+    if [[ ! "$col_number" =~ ^[0-9]+$ ]] || [[ "$col_number" -lt 1 ]] || [[ "$col_number" -gt "${#columns[@]}" ]]; then
+	echo -e "${red}Invalid column number. Please try again.${reset}"
+    else
+	break
+    fi
+done
+
+col_name="${columns[$((col_number - 1))]}"
+col_index=$col_number
+data_type="${data_types[$((col_number - 1))]}"
+
+is_primary_key=false
+if [[ "${columns[0]}" == "$col_name" ]]; then
+    is_primary_key=true
+fi
+
+while true; do
+    echo -n -e "◆ Enter the old value in ${yellow}$col_name${reset}: "
+    read -r old_value
+    old_value=$(echo "$old_value" | sed 's/^[ \t]*//;s/[ \t]*$//')
+
+    if ! awk -F':' -v col="$col_index" -v val="$old_value" '{ if ($col == val) print $0 }' "$table_name" | grep -q .; then
+	echo -e "${red}Old value not found in the column. Please try again.${reset}"
+    else
+	break
+    fi
+done
+
+while true; do
+    case ${data_type} in
+	"Int")
+	    while true; do
+	        echo -n -e "◆ Enter the new value for ${yellow}$col_name${reset} (integer): "
+	        read -r new_value
+	        if ! [[ "$new_value" =~ ^[0-9]+$ ]]; then
+	            echo -e "${red}Invalid input. Column $col_name accepts only integer values.${reset}"
+	            continue
+	        fi
+	        break
+	    done
+	    ;;
+	"String")
+	    echo -n -e "◆ Enter the new value for ${yellow}$col_name${reset} (string): "
+	    read -r new_value
+	    ;;
+	*)
+	    echo -n -e "◆ Enter the new value for $col_name: "
+	    read -r new_value
+	    ;;
+    esac
+
+    new_value=$(echo "$new_value" | sed 's/^[ \t]*//;s/[ \t]*$//')
+
+    if [[ "$is_primary_key" == true ]]; then
+	if awk -F':' -v col="$col_index" -v val="$new_value" '{ if ($col == val) print $0 }' "$table_name" | grep -q .; then
+	    echo -e "${red}Duplicate primary key value. Please try again.${reset}"
+	    continue
+	fi
+    fi
+    break
+done
+
+awk -F':' -v col="$col_index" -v old_val="$old_value" -v new_val="$new_value" '
+BEGIN { OFS=FS }
+{
+    if ($col == old_val) $col = new_val
+}
+{ print }
+' "$table_name" > temp_file && mv temp_file "$table_name"
+
+echo -e "${green}Value updated successfully.${reset}"
+sleep 0.5
+. ../../connect_menu

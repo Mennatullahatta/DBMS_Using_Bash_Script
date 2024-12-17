@@ -1,0 +1,15 @@
+#!/bin/bash
+
+WHITE='\033[1;37m'
+YELLOW='\033[0;33m'
+RESET='\033[0m'
+if [[ -z "$(ls -d */ 2>/dev/null)" ]]; then
+    echo "There are no databases created"
+else
+    echo -e "${WHITE}Databases found:${RESET}"
+    db=($(ls -d */ | sed 's|/$||'))
+    for i in "${!db[@]}"; do
+        echo -e "${WHITE}$((i + 1))) ${YELLOW}${db[$i]}${RESET}"
+    done
+    
+fi

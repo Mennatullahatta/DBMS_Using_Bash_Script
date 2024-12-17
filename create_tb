@@ -1,0 +1,136 @@
+#!/bin/bash
+
+export LC_COLLATE=C
+shopt -s extglob
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+RESET='\033[0m'
+
+while true; do
+    read -p "◆ Enter name of the table or '0' to return to database menu: " tbname
+    if [[ $tbname == 0 ]]; then
+
+        . ../../connect_menu
+
+    else
+        case $tbname in
+        +([a-zA-Z0-9_ ]*))
+            if [[ -f "$tbname" ]]; then
+                echo -e "${RED}$tbname already exists.${RESET}"
+                continue
+            else
+                tbname=$(echo "$tbname" | sed 's/ /_/g')
+                touch "$tbname"
+                touch "${tbname}_meta"
+                break
+            fi
+        ;;
+        *)
+            echo -e "${RED}Invalid table name.${RESET}"
+        ;;
+        esac
+    fi
+done
+
+while true; do
+    read -p "◆ Enter number of columns: " col_num
+    if [[ $col_num =~ ^[0-9]+$ && $col_num -gt 0 ]]; then
+        break
+    else
+        echo -e "${RED}◆ Enter a positive number!${RESET}"
+    fi
+done
+
+column_names=()
+data_types=()
+PS3="◆ Choose a data type (1-2): "
+
+primary_key=""
+
+for ((i = 1; i <= $col_num; i++)); do
+    while true; do
+        flag=0
+
+	 echo -n -e "◆ Enter name of column ${YELLOW}#$i${RESET}: "
+	 read -r col_name
+        col_name=$(echo "$col_name" | sed 's/ /_/g')
+        case $col_name in
+        +([a-zA-Z_]*))
+            for val in "${column_names[@]}"; do
+                if [[ $col_name == $val ]]; then
+                    ((flag++))
+                fi
+            done
+            if [[ $flag -gt 0 ]]; then
+                echo -e "${RED}You have already entered this column before.${RESET}"
+                continue
+            else
+                column_names+=("$col_name")
+                break
+            fi
+        ;;
+        *)
+            echo -e "${RED}Invalid column name.${RESET}"
+        ;;
+        esac
+    done
+    
+    echo -e "◆ Choose the data type of ${YELLOW}$col_name:${RESET}"
+    echo -e "1. ${YELLOW}Int${RESET}"
+    echo -e "2. ${YELLOW}String${RESET}"
+
+    while true; do
+        read -p "◆ Choose 1 or 2: " option
+        case $option in
+        1)
+            data_types+=(Int)
+            break
+        ;;
+        2)
+            data_types+=(String)
+            break
+        ;;
+        *)
+            echo -e "${RED}Invalid option.${RESET}"
+        ;;
+        esac
+    done
+
+    if [[ -z "$primary_key" ]]; then
+        while true; do
+            read -p "◆ Do you want $col_name to be the Primary Key? (y/n): " pk_option
+            case $pk_option in
+            [Yy])
+                primary_key="$col_name"
+
+                break
+            ;;
+            [Nn])
+                break
+            ;;
+            *)
+                echo -e "${RED}Invalid option. Please enter 'y' or 'n'.${RESET}"
+            ;;
+            esac
+        done
+    fi
+done
+
+name=""
+type=""
+for ((i = 0; i < ${#column_names[@]}; i++)); do
+    if [[ ${column_names[i]} == "$primary_key" ]]; then
+        name+="${column_names[i]}(PK):"
+    else
+        name+="${column_names[i]}:"
+    fi
+    type+="${data_types[i]}:"
+done
+
+echo "${name::-1}" >> "${tbname}_meta"
+echo "${type::-1}" >> "${tbname}_meta"
+echo -e "${GREEN}$tbname created successfully.${RESET}"
+
+. ../../connect_menu

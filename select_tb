@@ -1,0 +1,221 @@
+#!/bin/bash
+IFS=$' \t\n'
+
+WHITE='\033[1;37m'
+RED="\033[31m"
+YELLOW="\033[33m"
+GREEN="\033[32m"
+BLUE="\033[34m"
+RESET="\033[0m"
+
+while true; do
+
+    tables=($(ls -p | grep -v / | grep -v '_meta'))
+
+    if [[ ${#tables[@]} -eq 0 ]]; then
+        echo -e "${RED}No tables available.${RESET}"
+        break
+    else
+        echo -e "${WHITE}Existing Tables:${RESET}"
+        for i in "${!tables[@]}"; do
+            echo -e "${WHITE}$((i+1)). ${YELLOW}${tables[i]}${RESET}"
+        done
+
+        echo
+        read -p "◆ Enter the name of the table to select from or '0' to return to database menu: " input
+
+        if [[ $input == "0" ]]; then
+            cd ..
+            . ../connect_menu
+        elif [[ " ${tables[@]} " =~ " $input " ]]; then
+            tb_name=$input
+        else
+            echo -e "${RED}Invalid selection. Please enter a valid table name from the list.${RESET}"
+            continue
+        fi
+
+        while true; do
+            PS3="Choose option: "
+            options=("Select All" "Select by Column" "Select Specific Columns" "Exit")
+            
+            echo -e "${WHITE}Options:${RESET}"
+            for i in "${!options[@]}"; do
+                echo -e "${WHITE}$((i+1)). ${options[i]}${RESET}"
+            done
+            
+            read -p "◆ Enter your choice: " choice
+            
+            case $choice in
+                1)  # Select All
+                    if [[ -f $tb_name ]]; then
+
+                        header=$(cat "${tb_name}_meta" | head -n 1 | sed 's/(PK)//g' | tr ":" " ")
+
+                        header_array=($header)
+                        line_length=$(( $(echo $header | wc -w) * 21 ))
+
+                        printf "${BLUE}%*s\n${RESET}" $line_length | tr ' ' '-'
+
+                        for i in "${!header_array[@]}"; do
+                            printf "${WHITE}%-15s${RESET}" "${header_array[i]}"
+                            [[ $i -lt $((${#header_array[@]} - 1)) ]] && printf "${BLUE}| ${RESET}"
+                        done
+                        echo
+
+                        printf "${BLUE}%*s\n${RESET}" $line_length | tr ' ' '-'
+
+                        while IFS=: read -r line; do
+                            cols=($(echo "$line" | tr ":" " "))
+                            for i in "${!cols[@]}"; do
+                                printf "${YELLOW}%-15s${RESET}" "${cols[i]}"
+                                [[ $i -lt $((${#cols[@]} - 1)) ]] && printf "${BLUE}| ${RESET}"
+                            done
+                            echo
+                        done < "$tb_name"
+
+                        printf "${BLUE}%*s\n${RESET}" $line_length | tr ' ' '-'
+                    else
+                        echo -e "${RED}Table $tb_name does not exist.${RESET}"
+                    fi
+                    ;;
+                2)  # Select by Column
+                    if [[ -f $tb_name ]]; then
+                        columns=$(cat "${tb_name}_meta" | head -n 1 | sed 's/(PK)//g' | tr ":" " ")
+                        echo -e "${WHITE}${YELLOW}$tb_name ${WHITE}columns :${RESET}"
+                        i=1
+                        column_array=()
+                        for col in $columns; do
+                            echo -e "${WHITE}$i. ${YELLOW}$col${RESET}"
+                            column_array+=("$col")
+                            i=$((i+1))
+                        done
+                        
+                        while true; do
+                            read -p "◆ Enter the number of the column to search by: " col_number
+                            if [[ $col_number -lt 1 || $col_number -gt ${#column_array[@]} ]]; then
+                                echo -e "${RED}Invalid column number. Please enter a valid number.${RESET}"
+                            else
+                                break
+                            fi
+                        done
+                        
+                        search_column=${column_array[$((col_number-1))]}
+                        echo -n -e "◆ Enter the value to search for in column $search_column: " 
+                        read -r search_value
+                        
+
+                        header=$(cat "${tb_name}_meta" | head -n 1 | sed 's/(PK)//g' | tr ":" " ")
+                        header_array=($header)
+                        
+
+                        line_length=$(( $(echo $header | wc -w) * 21 ))
+                        printf "${BLUE}%*s\n${RESET}" $line_length | tr ' ' '-'
+                        
+
+                        for i in "${!header_array[@]}"; do
+                            printf "${WHITE}%-15s${RESET}" "${header_array[i]}"
+                            [[ $i -lt $((${#header_array[@]} - 1)) ]] && printf "${BLUE}| ${RESET}"
+                        done
+                        echo
+                        
+
+                        printf "${BLUE}%*s\n${RESET}" $line_length | tr ' ' '-'
+                        
+                        while IFS=: read -r line; do
+                            cols=($(echo "$line" | tr ":" " "))
+                            if [[ "${cols[$((col_number-1))]}" == "$search_value" ]]; then
+                                for i in "${!cols[@]}"; do
+                                    printf "${YELLOW}%-15s${RESET}" "${cols[i]}"
+                                    [[ $i -lt $((${#cols[@]} - 1)) ]] && printf "${BLUE}| ${RESET}"
+                                done
+                                echo
+                            fi
+                        done < "$tb_name"
+                        
+
+                        printf "${BLUE}%*s\n${RESET}" $line_length | tr ' ' '-'
+                    else
+                        echo -e "${RED}Table $tb_name does not exist.${RESET}"
+                    fi
+                    ;;
+                3)  # Select Specific Columns
+                    if [[ -f $tb_name ]]; then
+                        columns=$(cat "${tb_name}_meta" | head -n 1 | sed 's/(PK)//g' | tr ":" " ")
+                        echo -e "${WHITE}${YELLOW}${tb_name} ${WHITE}columns :${RESET}"
+                        i=1
+                        column_array=()
+                        for col in $columns; do
+                            echo -e "${WHITE}$i. ${YELLOW}$col${RESET}"
+                            column_array+=("$col")
+                            i=$((i+1))
+                        done
+                        
+                        while true; do
+                            read -p "◆ Enter the numbers of the columns to select, separated by space: " selected_column_numbers
+                            IFS=' ' read -ra selected_column_indices <<< "$selected_column_numbers"
+                            
+
+                            valid=true
+                            for index in "${selected_column_indices[@]}"; do
+                                if [[ "$index" -lt 1 || "$index" -gt ${#column_array[@]} ]]; then
+                                    valid=false
+                                    break
+                                fi
+                            done
+                            
+                            if $valid; then
+                                break
+                            else
+                                echo -e "${RED}Invalid column numbers. Please enter valid numbers from the list.${RESET}"
+                            fi
+                        done
+                        
+
+                        selected_columns=()
+                        for index in "${selected_column_indices[@]}"; do
+                            selected_columns+=("${column_array[$((index-1))]}")
+                        done
+                        
+
+                        line_length=$(( ${#selected_columns[@]} * 21 ))
+                        
+
+                        printf "${BLUE}%*s\n${RESET}" $line_length | tr ' ' '-'
+                        
+
+                        for i in "${!selected_columns[@]}"; do
+                            printf "${WHITE}%-15s${RESET}" "${selected_columns[i]}"
+                            [[ $i -lt $((${#selected_columns[@]} - 1)) ]] && printf "${BLUE}| ${RESET}"
+                        done
+                        echo
+                        
+
+                        printf "${BLUE}%*s\n${RESET}" $line_length | tr ' ' '-'
+                        
+
+                        while IFS=: read -r line; do
+                            cols=($(echo "$line" | tr ":" " "))
+                            for i in "${!selected_column_indices[@]}"; do
+                                printf "${YELLOW}%-15s${RESET}" "${cols[$((selected_column_indices[i]-1))]}"
+                                [[ $i -lt $((${#selected_column_indices[@]} - 1)) ]] && printf "${BLUE}| ${RESET}"
+                            done
+                            echo
+                        done < "$tb_name"
+
+
+                        printf "${BLUE}%*s\n${RESET}" $line_length | tr ' ' '-'
+                    else
+                        echo -e "${RED}Table $tb_name does not exist.${RESET}"
+                    fi
+                    ;;
+                4)  # Exit
+                    . ../../connect_menu
+                    break
+                    ;;
+                *)
+                    echo -e "${RED}Invalid option. Please choose a valid option (1-4).${RESET}"
+                    ;;
+            esac
+        done
+    fi
+done

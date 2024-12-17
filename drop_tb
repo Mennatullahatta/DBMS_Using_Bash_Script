@@ -1,0 +1,48 @@
+#!/bin/bash
+
+shopt -s extglob
+export LC_COLLATE=C
+
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+RESET='\033[0m'
+
+while true; do
+    read -p "◆ Enter the table you want to drop or 0 to return to database menu: " tb_name
+
+    if [[ "$tb_name" == 0 ]]; then
+
+        
+        . ../../connect_menu
+    fi
+
+    if [[ $tb_name =~ ^[a-zA-Z][a-zA-Z0-9]*$ ]]; then
+        meta_tb="${tb_name}_meta"
+
+        if [[ -z "$tb_name" ]]; then
+            echo -e "${RED}Error: table name cannot be empty.${RESET}"
+        elif [[ ! -e "$tb_name" ]]; then
+            echo -e "${RED}Error: table '$tb_name' does not exist.${RESET}"
+        else
+	read -p "$(echo -e "${RED}Are you sure you want to delete ${YELLOW}'$tb_name'${RESET}? (y/n): ${RESET}")" option
+
+            case $option in
+                [Yy]*)
+                    rm "$tb_name"
+                    rm "$meta_tb"
+                    echo -e "${GREEN}Table $tb_name deleted successfully.${RESET}"
+                    ;;
+                [Nn]*)
+                    echo -e "${RED}Table deletion cancelled.${RESET}"
+                    ;;
+                *)
+                    echo -e "${RED}Invalid input.${RESET}"
+                    ;;
+            esac
+        fi
+    else
+        echo -e "${RED}Invalid table name.${RESET}"
+    fi
+done

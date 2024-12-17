@@ -1,0 +1,39 @@
+#!/bin/bash
+
+
+DARK_BLUE='\033[0;34m'
+WHITE='\033[1;37m'
+YELLOW='\033[0;33m'
+GREEN='\033[0;32m'
+RESET='\033[0m'
+
+db=($(ls -d */ 2>/dev/null | sed 's|/$||'))
+
+while true; do
+
+    if [[ ${#db[@]} -eq 0 ]]; then
+        echo -e "${RED}There are no databases created${RESET}"
+        break
+    else
+        echo -e "${WHITE}Existing databases:${RESET}"
+        for i in "${!db[@]}"; do
+            echo -e "${WHITE}$((i+1)). ${YELLOW}${db[$i]}${RESET}"
+        done
+
+        read -p "◆ Enter the name of the database to connect or '0' to return to main menu: " dbname
+
+
+        if [[ $dbname == "0" ]]; then
+            cd ..
+            . ./main_menu
+            break
+        elif [[ " ${db[@]} " =~ " $dbname " ]]; then
+            cd "$dbname"
+            
+            . ../../connect_menu
+            break
+        else
+            echo -e "${RED}Invalid database name.${RESET}"
+        fi
+    fi
+done

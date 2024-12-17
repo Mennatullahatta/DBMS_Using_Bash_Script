@@ -1,0 +1,48 @@
+#!/bin/bash
+
+# Colors
+RED="\033[1;31m"
+GREEN="\033[1;32m"
+YELLOW="\033[1;33m"
+WHITE="\033[1;37m"
+RESET="\033[0m"
+
+while true; do
+    db=($(ls -F | grep / | sed 's|/$||'))
+
+    if [[ ${#db[@]} -eq 0 ]]; then
+        echo -e "There are no databases created."
+        break
+    else
+        echo -e "${WHITE}Existing databases:${RESET}"
+        for i in "${!db[@]}"; do
+            echo -e "${WHITE}$((i + 1)). ${YELLOW}${db[$i]}${RESET}"
+        done
+
+        read -p "◆ Enter the name of the database to drop or '0' to go to main menu: " dbname
+
+        if [[ $dbname == "0" ]]; then
+            cd ..
+            . ./main_menu
+            break
+
+        elif [[ " ${db[@]} " =~ " $dbname " ]]; then
+            read -p "$(echo -e "${RED}Are you sure you want to drop the database ${YELLOW}$dbname${RED}? (y/n): ${RESET}")" input
+
+            case $input in
+                [Yy]) 
+                    rm -r "$dbname"
+                    echo -e "${GREEN}$dbname dropped successfully.${RESET}"
+                    ;;
+                [Nn]) 
+                    echo -e "${RED}Drop canceled.${RESET}"
+                    ;;
+                *) 
+                    echo -e "${RED}Invalid option, try again.${RESET}"
+                    ;;
+            esac
+        else
+            echo -e "${RED}Invalid database name. Please enter a valid name.${RESET}"
+        fi
+    fi
+done
