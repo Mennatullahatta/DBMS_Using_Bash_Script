@@ -1,0 +1,73 @@
+#!/bin/bash
+
+DARK_BLUE='\033[0;34m'
+WHITE='\033[1;37m'
+RED='\033[0;31m'
+BOLD='\033[1m'
+RESET='\033[0m'
+
+
+clear
+
+
+terminal_width=$(tput cols)
+welcome_message="WELCOME TO DBMS"
+padding=$(( (terminal_width - ${#welcome_message} - 20) / 2 ))  
+side_marks="=========="
+printf "%*s%s${BOLD}%s${RESET}%s\n" $padding "" "$side_marks" "$welcome_message" "$side_marks"
+
+
+
+if [ -d ./Databases ]; then
+    cd ./Databases
+else
+    mkdir ./Databases
+    cd ./Databases
+fi
+
+while true; do
+    echo -e "${DARK_BLUE}╔═══════════════════════════════════════╗${RESET}"
+    echo -e "${DARK_BLUE}║              MAIN MENU                ║${RESET}"
+    echo -e "${DARK_BLUE}╠═══════════════════════════════════════╣${RESET}"
+    echo -e "${DARK_BLUE}║${RESET}${WHITE} 1. Create Database                    ${DARK_BLUE}║${RESET}"
+    echo -e "${DARK_BLUE}║${RESET}${WHITE} 2. List Databases                     ${DARK_BLUE}║${RESET}"
+    echo -e "${DARK_BLUE}║${RESET}${WHITE} 3. Connect To Database                ${DARK_BLUE}║${RESET}"
+    echo -e "${DARK_BLUE}║${RESET}${WHITE} 4. Drop Database                      ${DARK_BLUE}║${RESET}"
+    echo -e "${DARK_BLUE}║${RESET}${WHITE} 5. Exit                               ${DARK_BLUE}║${RESET}"
+    echo -e "${DARK_BLUE}╚═══════════════════════════════════════╝${RESET}"
+
+    read -p "◆ Choose an option (1-5): " choice 
+    echo ""
+
+    case $choice in
+        1)
+            echo -e "${DARK_BLUE}Creating a new database...${RESET}"
+            sleep 0.5
+            . ../create_DB
+            ;;
+        2)
+            echo -e "${DARK_BLUE}Listing all databases...${RESET}"
+            sleep 0.5
+            . ../list_DB
+            ;;
+        3)
+            echo -e "${DARK_BLUE}Connecting to a database...${RESET}"
+            sleep 0.5
+            . ../connect_to_DB
+            ;;
+        4)
+            echo -e "${DARK_BLUE}Dropping a database...${RESET}"
+            sleep 0.5
+            . ../drop_DB
+            ;;
+        5)
+          
+            sleep 0.5
+            exit 
+            ;;
+        *)
+            echo -e "${RED}Invalid option. Please try again.${RESET}"
+            sleep 0.5
+            ;;
+    esac
+done
