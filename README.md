@@ -23,3 +23,14 @@ This project aims to develop a **Database Management System (DBMS)** that allows
 - **Delete from Table**: Remove records from a table.
 - **Update Table**: Modify data in a table with proper checks on data types.
 
+## Installation
+
+To run this project, follow these steps:
+
+1. Clone the repository or download the files to your local machine.
+
+2. Open your terminal and navigate to the folder containing the project files.
+
+3. Start the project by executing the `main_menu` script.
+  
+
