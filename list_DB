@@ -9,7 +9,7 @@ else
     echo -e "${WHITE}Databases found:${RESET}"
     db=($(ls -d */ | sed 's|/$||'))
     for i in "${!db[@]}"; do
-        echo -e "${WHITE}$((i + 1))) ${YELLOW}${db[$i]}${RESET}"
+        echo -e "${WHITE}$((i + 1)). ${YELLOW}${db[$i]}${RESET}"
     done
     
 fi
